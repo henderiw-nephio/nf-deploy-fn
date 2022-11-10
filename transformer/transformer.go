@@ -88,8 +88,8 @@ func (t *NfDeploy) GatherInfo(rl *fn.ResourceList) {
 
 func (t *NfDeploy) GenerateNfDeploy(rl *fn.ResourceList) {
 	for epName, ep := range t.endpoints {
-		ipAllocName := strings.Join([]string{"upf", t.region}, "-") // TODO need more discussion
 		if *ep.NetworkInstance != "" && *ep.NetworkName != "" {
+			ipAllocName := strings.Join([]string{"upf", t.region}, "-") // TODO need more discussion
 			ipAlloc, err := ipam.BuildIPAMAllocationFn(
 				ipAllocName,
 				types.NamespacedName{

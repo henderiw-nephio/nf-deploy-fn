@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20221109010843-1f7d0c07a381
-	github.com/henderiw-nephio/nf-injector-controller v0.0.4
+	github.com/henderiw-nephio/nf-injector-controller v0.0.6
 	github.com/nephio-project/nephio-pocs/nephio-5gc-controller v0.0.0-20221108225808-1350f8835203
 	github.com/nokia/k8s-ipam v0.0.0-20221107150451-abc811dc482b
 	k8s.io/apimachinery v0.25.3

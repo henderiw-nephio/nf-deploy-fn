@@ -15,12 +15,12 @@ import (
 )
 
 type NfDeploy struct {
-	namespace             string
-	region                string
-	dnn                   string
-	capacity              nfv1alpha1.UPFCapacity
-	endpoints             map[string]*nfv1alpha1.Endpoint
-	n6pool                nfv1alpha1.Pool
+	namespace              string
+	region                 string
+	dnn                    string
+	capacity               nfv1alpha1.UPFCapacity
+	endpoints              map[string]*nfv1alpha1.Endpoint
+	n6pool                 nfv1alpha1.Pool
 	existingIPAllocations  map[string]int // element to kep track of update
 	existingUPFDeployments map[string]int // element to kep track of update
 }

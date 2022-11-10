@@ -15,12 +15,14 @@ import (
 )
 
 type NfDeploy struct {
-	namespace string
-	region    string
-	dnn       string
-	capacity  nfv1alpha1.UPFCapacity
-	endpoints map[string]*nfv1alpha1.Endpoint
-	n6pool    nfv1alpha1.Pool
+	namespace             string
+	region                string
+	dnn                   string
+	capacity              nfv1alpha1.UPFCapacity
+	endpoints             map[string]*nfv1alpha1.Endpoint
+	n6pool                nfv1alpha1.Pool
+	existingIPAllocations  map[string]int // element to kep track of update
+	existingUPFDeployments map[string]int // element to kep track of update
 }
 
 func Run(rl *fn.ResourceList) (bool, error) {
@@ -31,6 +33,8 @@ func Run(rl *fn.ResourceList) (bool, error) {
 			"n6": nil,
 			"n9": nil,
 		},
+		existingIPAllocations:  map[string]int{},
+		existingUPFDeployments: map[string]int{},
 	}
 	// gathers the ip info from the ip-allocations
 	t.GatherInfo(rl)
@@ -41,11 +45,17 @@ func Run(rl *fn.ResourceList) (bool, error) {
 }
 
 func (t *NfDeploy) GatherInfo(rl *fn.ResourceList) {
-	for _, o := range rl.Items {
+	for i, o := range rl.Items {
 		// parse the node using kyaml
 		rn, err := yaml.Parse(o.String())
 		if err != nil {
 			rl.Results = append(rl.Results, fn.ErrorConfigObjectResult(err, o))
+		}
+		if rn.GetApiVersion() == "ipam.nephio.org/v1alpha1" && rn.GetKind() == "IPAllocation" {
+			t.existingIPAllocations[rn.GetName()] = i
+		}
+		if rn.GetApiVersion() == "nf.nephio.org/v1alpha1" && rn.GetKind() == "UPFDeployment" {
+			t.existingUPFDeployments[rn.GetName()] = i
 		}
 		if rn.GetApiVersion() == "nf.nephio.org/v1alpha1" && rn.GetKind() == "FiveGCoreTopology" {
 			t.namespace = rn.GetNamespace()
@@ -78,9 +88,10 @@ func (t *NfDeploy) GatherInfo(rl *fn.ResourceList) {
 
 func (t *NfDeploy) GenerateNfDeploy(rl *fn.ResourceList) {
 	for epName, ep := range t.endpoints {
+		ipAllocName := strings.Join([]string{"upf", t.region}, "-") // TODO need more discussion
 		if *ep.NetworkInstance != "" && *ep.NetworkName != "" {
 			ipAlloc, err := ipam.BuildIPAMAllocationFn(
-				strings.Join([]string{"upf", t.region}, "-"),
+				ipAllocName,
 				types.NamespacedName{
 					Name:      epName,
 					Namespace: t.namespace,
@@ -97,7 +108,13 @@ func (t *NfDeploy) GenerateNfDeploy(rl *fn.ResourceList) {
 			if err != nil {
 				rl.Results = append(rl.Results, fn.ErrorConfigObjectResult(err, ipAlloc))
 			}
-			rl.Items = append(rl.Items, ipAlloc)
+			if i, ok := t.existingIPAllocations[ipAllocName]; ok {
+				// exits -> replace
+				rl.Items[i] = ipAlloc
+			} else {
+				// add new entry
+				rl.Items = append(rl.Items, ipAlloc)
+			}
 		}
 	}
 
@@ -105,6 +122,7 @@ func (t *NfDeploy) GenerateNfDeploy(rl *fn.ResourceList) {
 	if err != nil {
 		rl.Results = append(rl.Results, fn.ErrorConfigObjectResult(err, rl.Items[0]))
 	}
+	ipPoolAllocName := strings.Join([]string{"upf", t.region}, "-")
 	ipPoolAlloc, err := ipam.BuildIPAMAllocationFn(
 		strings.Join([]string{"upf", t.region}, "-"),
 		types.NamespacedName{
@@ -124,11 +142,18 @@ func (t *NfDeploy) GenerateNfDeploy(rl *fn.ResourceList) {
 	if err != nil {
 		rl.Results = append(rl.Results, fn.ErrorConfigObjectResult(err, ipPoolAlloc))
 	}
-	rl.Items = append(rl.Items, ipPoolAlloc)
+	if i, ok := t.existingIPAllocations[ipPoolAllocName]; ok {
+		// exits -> replace
+		rl.Items[i] = ipPoolAlloc
+	} else {
+		// add new entry
+		rl.Items = append(rl.Items, ipPoolAlloc)
+	}
 
+	upfDeploymentName := strings.Join([]string{"upf", t.region}, "-")
 	upfDeployment, err := upf.BuildUPFDeploymentFn(
 		types.NamespacedName{
-			Name:      strings.Join([]string{"upf", t.region}, "-"),
+			Name:      upfDeploymentName,
 			Namespace: t.namespace,
 		},
 		upf.BuildUPFDeploymentSpec(t.endpoints, t.dnn, t.capacity),
@@ -137,4 +162,11 @@ func (t *NfDeploy) GenerateNfDeploy(rl *fn.ResourceList) {
 		rl.Results = append(rl.Results, fn.ErrorConfigObjectResult(err, upfDeployment))
 	}
 	rl.Items = append(rl.Items, upfDeployment)
+	if i, ok := t.existingUPFDeployments[upfDeploymentName]; ok {
+		// exits -> replace
+		rl.Items[i] = upfDeployment
+	} else {
+		// add new entry
+		rl.Items = append(rl.Items, upfDeployment)
+	}
 }

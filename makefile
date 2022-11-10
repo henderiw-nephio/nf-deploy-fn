@@ -1,6 +1,6 @@
 VERSION ?= latest
 REGISTRY ?= henderiw
-IMG ?= $(REGISTRY)/nad-inject-fn:${VERSION}
+IMG ?= $(REGISTRY)/nf-deploy-fn:${VERSION}
 
 .PHONY: all
 all: test

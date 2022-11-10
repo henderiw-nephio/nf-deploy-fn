@@ -1,7 +1,6 @@
 package transformer
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -35,17 +34,6 @@ func Run(rl *fn.ResourceList) (bool, error) {
 	}
 	// gathers the ip info from the ip-allocations
 	t.GatherInfo(rl)
-
-	for epName, ep := range t.endpoints {
-		if ep != nil {
-			fmt.Printf("transformData: %s, prefix: %s, gateway: %s\n",
-				epName,
-				*ep.NetworkInstance,
-				*ep.NetworkName,
-			)
-		}
-
-	}
 
 	// transforms the upf with the ip info collected/gathered
 	t.GenerateNfDeploy(rl)
@@ -120,7 +108,7 @@ func (t *NfDeploy) GenerateNfDeploy(rl *fn.ResourceList) {
 		types.NamespacedName{
 			Name:      "n6pool",
 			Namespace: t.namespace,
-		}, 
+		},
 		ipamv1alpha1.IPAllocationSpec{
 			PrefixKind:   string(ipamv1alpha1.PrefixKindPool),
 			PrefixLength: uint8(ps),

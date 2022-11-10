@@ -78,25 +78,27 @@ func (t *NfDeploy) GatherInfo(rl *fn.ResourceList) {
 
 func (t *NfDeploy) GenerateNfDeploy(rl *fn.ResourceList) {
 	for epName, ep := range t.endpoints {
-		ipAlloc, err := ipam.BuildIPAMAllocationFn(
-			strings.Join([]string{"upf", t.region}, "-"),
-			types.NamespacedName{
-				Name:      epName,
-				Namespace: t.namespace,
-			},
-			ipamv1alpha1.IPAllocationSpec{
-				PrefixKind: string(ipamv1alpha1.PrefixKindNetwork),
-				Selector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						ipamv1alpha1.NephioNetworkInstanceKey: *ep.NetworkInstance,
-						ipamv1alpha1.NephioNetworkNameKey:     *ep.NetworkName,
-					},
+		if *ep.NetworkInstance != "" && *ep.NetworkName != "" {
+			ipAlloc, err := ipam.BuildIPAMAllocationFn(
+				strings.Join([]string{"upf", t.region}, "-"),
+				types.NamespacedName{
+					Name:      epName,
+					Namespace: t.namespace,
 				},
-			})
-		if err != nil {
-			rl.Results = append(rl.Results, fn.ErrorConfigObjectResult(err, ipAlloc))
+				ipamv1alpha1.IPAllocationSpec{
+					PrefixKind: string(ipamv1alpha1.PrefixKindNetwork),
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							ipamv1alpha1.NephioNetworkInstanceKey: *ep.NetworkInstance,
+							ipamv1alpha1.NephioNetworkNameKey:     *ep.NetworkName,
+						},
+					},
+				})
+			if err != nil {
+				rl.Results = append(rl.Results, fn.ErrorConfigObjectResult(err, ipAlloc))
+			}
+			rl.Items = append(rl.Items, ipAlloc)
 		}
-		rl.Items = append(rl.Items, ipAlloc)
 	}
 
 	ps, err := strconv.Atoi(*t.n6pool.PrefixSize)

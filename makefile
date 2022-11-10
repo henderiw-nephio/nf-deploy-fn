@@ -1,5 +1,5 @@
 VERSION ?= latest
-REGISTRY ?= henderiw
+REGISTRY ?= yndd
 IMG ?= $(REGISTRY)/nf-deploy-fn:${VERSION}
 
 .PHONY: all

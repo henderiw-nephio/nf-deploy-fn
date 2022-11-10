@@ -1,6 +1,7 @@
 package transformer
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -143,6 +144,7 @@ func (t *NfDeploy) GenerateNfDeploy(rl *fn.ResourceList) {
 		rl.Results = append(rl.Results, fn.ErrorConfigObjectResult(err, ipPoolAlloc))
 	}
 	if i, ok := t.existingIPAllocations[ipPoolAllocName]; ok {
+		fmt.Printf("ip alloc exists: %s\n", ipPoolAllocName)
 		// exits -> replace
 		rl.Items[i] = ipPoolAlloc
 	} else {

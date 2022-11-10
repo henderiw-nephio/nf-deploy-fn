@@ -161,7 +161,6 @@ func (t *NfDeploy) GenerateNfDeploy(rl *fn.ResourceList) {
 	if err != nil {
 		rl.Results = append(rl.Results, fn.ErrorConfigObjectResult(err, upfDeployment))
 	}
-	rl.Items = append(rl.Items, upfDeployment)
 	if i, ok := t.existingUPFDeployments[upfDeploymentName]; ok {
 		// exits -> replace
 		rl.Items[i] = upfDeployment
